@@ -7,10 +7,8 @@
 ################################################################
 
 from collections import deque
-from typing import Any, Optional
-from abc import abstractmethod
-
-from hex_ros_common.utility import InterfaceBase
+from typing import Any, Dict, List, Optional
+from abc import ABC, abstractmethod
 
 from hex_util_msg.dataclass.dataclass_robo import (
     HexDcRoboManipStateStamped,
@@ -27,10 +25,10 @@ JOINT_STATE_NAME = [
 ]
 
 
-class HelloInterfaceBase(InterfaceBase):
+class HelloInterfaceBase(ABC):
 
     def __init__(self, name: str = "unknown"):
-        super().__init__(name)
+        self._name = name
 
         ### ros parameters
         self._rate_param = {}
@@ -38,6 +36,48 @@ class HelloInterfaceBase(InterfaceBase):
 
         ### rx msg queues
         self._color_cmd_deque = deque(maxlen=10)
+
+    ####################
+    ### ros infrastructure
+    ####################
+    @abstractmethod
+    def ok(self) -> bool:
+        raise NotImplementedError("HelloInterfaceBase.ok")
+
+    @abstractmethod
+    def shutdown(self):
+        raise NotImplementedError("HelloInterfaceBase.shutdown")
+
+    @abstractmethod
+    def sleep(self):
+        raise NotImplementedError("HelloInterfaceBase.sleep")
+
+    @abstractmethod
+    def now_ns(self) -> int:
+        raise NotImplementedError("HelloInterfaceBase.now_ns")
+
+    ####################
+    ### logging
+    ####################
+    @abstractmethod
+    def logd(self, msg, *args, **kwargs):
+        raise NotImplementedError("HelloInterfaceBase.logd")
+
+    @abstractmethod
+    def logi(self, msg, *args, **kwargs):
+        raise NotImplementedError("HelloInterfaceBase.logi")
+
+    @abstractmethod
+    def logw(self, msg, *args, **kwargs):
+        raise NotImplementedError("HelloInterfaceBase.logw")
+
+    @abstractmethod
+    def loge(self, msg, *args, **kwargs):
+        raise NotImplementedError("HelloInterfaceBase.loge")
+
+    @abstractmethod
+    def logf(self, msg, *args, **kwargs):
+        raise NotImplementedError("HelloInterfaceBase.logf")
 
     ####################
     ### parameters
@@ -86,5 +126,5 @@ class HelloInterfaceBase(InterfaceBase):
                 return None
 
     # color command (RGB LED — Hello Y6)
-    def get_color_cmd(self, latest: bool = False) -> Optional[dict[str, list[int]]]:
+    def get_color_cmd(self, latest: bool = False) -> Optional[Dict[str, List[int]]]:
         return self.deque_helper(self._color_cmd_deque, latest)

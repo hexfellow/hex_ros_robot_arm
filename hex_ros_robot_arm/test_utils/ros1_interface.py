@@ -10,8 +10,6 @@ import numpy as np
 
 import rospy
 
-from hex_ros_common.utility import DataInterfaceBase
-
 from geometry_msgs.msg import Point, Pose, Quaternion, Vector3
 from sensor_msgs.msg import JointState
 from hex_ros_msgs.msg import (
@@ -44,9 +42,10 @@ from hex_util_msg.dataclass.dataclass_robo import (
 from .interface_base import TestInterfaceBase
 
 
-class DataInterface(DataInterfaceBase, TestInterfaceBase):
+class DataInterface(TestInterfaceBase):
 
     def __init__(self, name: str = "unknown"):
+        rospy.init_node(name, anonymous=True)
         super().__init__(name)
 
         ### parameters
@@ -74,6 +73,36 @@ class DataInterface(DataInterfaceBase, TestInterfaceBase):
 
     def sleep(self):
         self.__rate.sleep()
+
+    ####################
+    ### ros infrastructure
+    ####################
+    def ok(self) -> bool:
+        return not rospy.is_shutdown()
+
+    def shutdown(self):
+        pass
+
+    def now_ns(self) -> int:
+        return rospy.Time.now().to_nsec()
+
+    ####################
+    ### logging
+    ####################
+    def logd(self, msg, *args, **kwargs):
+        rospy.logdebug(msg, *args, **kwargs)
+
+    def logi(self, msg, *args, **kwargs):
+        rospy.loginfo(msg, *args, **kwargs)
+
+    def logw(self, msg, *args, **kwargs):
+        rospy.logwarn(msg, *args, **kwargs)
+
+    def loge(self, msg, *args, **kwargs):
+        rospy.logerr(msg, *args, **kwargs)
+
+    def logf(self, msg, *args, **kwargs):
+        rospy.logfatal(msg, *args, **kwargs)
 
     ####################
     ### publishers

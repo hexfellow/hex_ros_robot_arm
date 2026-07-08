@@ -195,17 +195,17 @@ class RobotArcherY6:
             if ctrl is not None:
                 self.__apply_manip_ctrl(ctrl)
 
-            # 2. read robot state
-            arm_state = self.__robot.get_arm_state()
-            grip_state = self.__robot.get_grip_state()
-
-            # 3. publish /clock
+            # 2. publish /clock
             self.__data_interface.pub_clock(self.__data_interface.now_ns())
 
-            # 4. publish robot state at the requested rate
+            # 3. publish robot state at the requested rate
             state_count += 1
             if state_count >= self.__state_decim:
                 state_count = 0
+                
+                arm_state = self.__robot.get_arm_state()
+                grip_state = self.__robot.get_grip_state()
+                
                 manip_state = self.__build_manip_state(arm_state, grip_state)
                 if manip_state is not None:
                     self.__data_interface.pub_manip_state(manip_state)

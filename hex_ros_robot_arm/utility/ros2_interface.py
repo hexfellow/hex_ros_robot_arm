@@ -7,21 +7,21 @@
 ################################################################
 
 import numpy as np
+import threading
 
 from hex_util_runtime import ns_now
 
-from hex_ros_common.utility import DataInterfaceBase
+import rclpy
+import rclpy.node
 
 from builtin_interfaces.msg import Time
 from sensor_msgs.msg import JointState
 from rosgraph_msgs.msg import Clock
-from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import Pose
 from hex_ros_msgs.msg import (
     HexRosJnt,
     HexRosRoboManipStateStamped,
     HexRosRoboManipCtrlStamped,
-    HexRosTeleopHandleStateStamped,
 )
 
 from hex_util_msg.dataclass.dataclass_base import (
@@ -41,73 +41,71 @@ from hex_util_msg.dataclass.dataclass_robo import (
     HexDcRoboManipCtrlStamped,
     HexDcRoboManipStateStamped,
 )
-from hex_util_msg.dataclass.dataclass_teleop import (
-    HexDcTeleopHandleStateStamped,
-)
 
 from .interface_base import ArmInterfaceBase
 from .interface_base import JOINT_STATE_NAME
 
 
-class DataInterface(DataInterfaceBase, ArmInterfaceBase):
+class DataInterface(ArmInterfaceBase):
 
     def __init__(self, name: str = "unknown"):
+        rclpy.init()
+        self.__node = rclpy.node.Node(name)
+        self._logger = self.__node.get_logger()
+        self._shutting_down = False
+        self.__spin_thread = threading.Thread(target=self.__spin)
+        self.__spin_thread.start()
+
         super().__init__(name)
 
         ### rate parameters
-        self._node.declare_parameter('ctrl_rate', 500.0)
-        self._node.declare_parameter('rate_state', 100.0)
-        self._rate_param["ros"] = self._node.get_parameter('ctrl_rate').value
-        self._rate_param["state"] = self._node.get_parameter('rate_state').value
-        self.__rate = self._node.create_rate(self._rate_param["ros"])
+        self.__node.declare_parameter('ctrl_rate', 500.0)
+        self.__node.declare_parameter('rate_state', 100.0)
+        self._rate_param["ros"] = self.__node.get_parameter('ctrl_rate').value
+        self._rate_param["state"] = self.__node.get_parameter('rate_state').value
+        self.__rate = self.__node.create_rate(self._rate_param["ros"])
 
         ### robot parameters
-        self._node.declare_parameter('robot_host', "192.168.1.100")
-        self._node.declare_parameter('robot_port', 8439)
-        self._node.declare_parameter('robot_frame_id', "base_link")
-        self._node.declare_parameter('robot_grip_type', "gp80")
-        self._node.declare_parameter('state_buffer_size', 200)
-        self._node.declare_parameter('sens_ts', False)
-        self._node.declare_parameter('use_ros_time', False)
+        self.__node.declare_parameter('robot_host', "192.168.1.100")
+        self.__node.declare_parameter('robot_port', 8439)
+        self.__node.declare_parameter('robot_frame_id', "base_link")
+        self.__node.declare_parameter('robot_grip_type', "gp80")
+        self.__node.declare_parameter('state_buffer_size', 200)
+        self.__node.declare_parameter('sens_ts', False)
+        self.__node.declare_parameter('use_ros_time', False)
         self._robot_param = {
-            "host": self._node.get_parameter('robot_host').value,
-            "port": self._node.get_parameter('robot_port').value,
-            "frame_id": self._node.get_parameter('robot_frame_id').value,
-            "grip_type": self._node.get_parameter('robot_grip_type').value,
-            "state_buffer_size": self._node.get_parameter('state_buffer_size').value,
-            "sens_ts": self._node.get_parameter('sens_ts').value,
+            "host": self.__node.get_parameter('robot_host').value,
+            "port": self.__node.get_parameter('robot_port').value,
+            "frame_id": self.__node.get_parameter('robot_frame_id').value,
+            "grip_type": self.__node.get_parameter('robot_grip_type').value,
+            "state_buffer_size": self.__node.get_parameter('state_buffer_size').value,
+            "sens_ts": self.__node.get_parameter('sens_ts').value,
         }
 
         ### time source — PTP (ns_now) or ROS clock
-        self._use_ros_time = self._node.get_parameter('use_ros_time').value
+        self._use_ros_time = self.__node.get_parameter('use_ros_time').value
 
         ### publisher — manip_state
-        self.__manip_state_pub = self._node.create_publisher(
+        self.__manip_state_pub = self.__node.create_publisher(
             HexRosRoboManipStateStamped,
             'manip_state',
             10,
         )
         ### publisher — joint_states (for robot_state_publisher / rviz)
-        self.__joint_state_pub = self._node.create_publisher(
+        self.__joint_state_pub = self.__node.create_publisher(
             JointState,
             'joint_states',
             10,
         )
         ### publisher — /clock (for sim_time compatibility)
-        self.__clock_pub = self._node.create_publisher(
+        self.__clock_pub = self.__node.create_publisher(
             Clock,
             '/clock',
             10,
         )
-        ### publisher — joy_state (Hello grip joy)
-        self.__joy_state_pub = self._node.create_publisher(
-            HexRosTeleopHandleStateStamped,
-            'joy_state',
-            10,
-        )
 
         ### subscriber — manip_ctrl
-        self.__manip_ctrl_sub = self._node.create_subscription(
+        self.__manip_ctrl_sub = self.__node.create_subscription(
             HexRosRoboManipCtrlStamped,
             'manip_ctrl',
             self.__manip_ctrl_callback,
@@ -115,24 +113,59 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
         )
         self.__manip_ctrl_sub
 
-        ### subscriber — color_cmd (RGB LED control, std_msgs/ColorRGBA)
-        self.__color_cmd_sub = self._node.create_subscription(
-            ColorRGBA,
-            'color_cmd',
-            self.__color_cmd_callback,
-            10,
-        )
-        self.__color_cmd_sub
-
     def sleep(self):
         self.__rate.sleep()
+
+    ####################
+    ### ros infrastructure
+    ####################
+    def ok(self) -> bool:
+        return rclpy.ok()
+
+    def shutdown(self):
+        if self._shutting_down:
+            return
+        self._shutting_down = True
+        try:
+            self.__node.destroy_node()
+        except Exception:
+            pass
+        try:
+            rclpy.shutdown()
+        except Exception:
+            pass
+        self.__spin_thread.join()
+
+    def __spin(self):
+        try:
+            rclpy.spin(self.__node)
+        except rclpy.executors.ExternalShutdownException:
+            pass
+
+    ####################
+    ### logging
+    ####################
+    def logd(self, msg, *args, **kwargs):
+        self._logger.debug(msg, *args, **kwargs)
+
+    def logi(self, msg, *args, **kwargs):
+        self._logger.info(msg, *args, **kwargs)
+
+    def logw(self, msg, *args, **kwargs):
+        self._logger.warning(msg, *args, **kwargs)
+
+    def loge(self, msg, *args, **kwargs):
+        self._logger.error(msg, *args, **kwargs)
+
+    def logf(self, msg, *args, **kwargs):
+        self._logger.fatal(msg, *args, **kwargs)
 
     ####################
     ### time source
     ####################
     def now_ns(self) -> int:
         if self._use_ros_time:
-            return self._node.get_clock().now().nanoseconds
+            return self.__node.get_clock().now().nanoseconds
         return ns_now()
 
     ####################
@@ -206,36 +239,6 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
             nanosec=int(stamp_ns % 1_000_000_000),
         )
         self.__clock_pub.publish(msg)
-
-    def pub_joy_state(self, out: HexDcTeleopHandleStateStamped):
-        msg = HexRosTeleopHandleStateStamped()
-        msg.header.stamp = Time(
-            sec=int(out.header.stamp.secs),
-            nanosec=int(out.header.stamp.nsecs),
-        )
-        msg.header.frame_id = out.header.frame_id
-        msg.handle_state.axis_x = out.handle_state.axis_x
-        msg.handle_state.axis_y = out.handle_state.axis_y
-        msg.handle_state.trigger = out.handle_state.trigger
-        msg.handle_state.btn_w = out.handle_state.btn_w
-        msg.handle_state.btn_x = out.handle_state.btn_x
-        msg.handle_state.btn_y = out.handle_state.btn_y
-        msg.handle_state.btn_z = out.handle_state.btn_z
-        self.__joy_state_pub.publish(msg)
-
-    ####################
-    ### subscribers
-    ####################
-    def __color_cmd_callback(self, msg: ColorRGBA):
-        """Convert ColorRGBA (float 0-1) to int 0-255 arrays and push to deque."""
-        r = int(msg.r * 255.0)
-        g = int(msg.g * 255.0)
-        b = int(msg.b * 255.0)
-        self._color_cmd_deque.append({
-            "r": [r] * 6,
-            "g": [g] * 6,
-            "b": [b] * 6,
-        })
 
     def __manip_ctrl_callback(self, msg: HexRosRoboManipCtrlStamped):
         self._manip_ctrl_deque.append(self.__manip_ctrl_msg_to_dc(msg))

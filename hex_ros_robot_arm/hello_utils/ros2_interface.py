@@ -7,10 +7,12 @@
 ################################################################
 
 import numpy as np
+import threading
 
 from hex_util_runtime import ns_now
 
-from hex_ros_common.utility import DataInterfaceBase
+import rclpy
+import rclpy.node
 
 from builtin_interfaces.msg import Time
 from sensor_msgs.msg import JointState
@@ -32,56 +34,63 @@ from .interface_base import HelloInterfaceBase
 from .interface_base import JOINT_STATE_NAME
 
 
-class DataInterface(DataInterfaceBase, HelloInterfaceBase):
+class DataInterface(HelloInterfaceBase):
 
     def __init__(self, name: str = "unknown"):
+        rclpy.init()
+        self.__node = rclpy.node.Node(name)
+        self._logger = self.__node.get_logger()
+        self._shutting_down = False
+        self.__spin_thread = threading.Thread(target=self.__spin)
+        self.__spin_thread.start()
+
         super().__init__(name)
 
         ### rate parameters
-        self._node.declare_parameter('ctrl_rate', 500.0)
-        self._node.declare_parameter('rate_state', 100.0)
-        self._rate_param["ros"] = self._node.get_parameter('ctrl_rate').value
-        self._rate_param["state"] = self._node.get_parameter('rate_state').value
-        self.__rate = self._node.create_rate(self._rate_param["ros"])
+        self.__node.declare_parameter('ctrl_rate', 500.0)
+        self.__node.declare_parameter('rate_state', 100.0)
+        self._rate_param["ros"] = self.__node.get_parameter('ctrl_rate').value
+        self._rate_param["state"] = self.__node.get_parameter('rate_state').value
+        self.__rate = self.__node.create_rate(self._rate_param["ros"])
 
         ### robot parameters (no grip_type — Hello Y6 has no gripper)
-        self._node.declare_parameter('robot_host', "192.168.1.100")
-        self._node.declare_parameter('robot_port', 8439)
-        self._node.declare_parameter('robot_frame_id', "base_link")
-        self._node.declare_parameter('state_buffer_size', 200)
-        self._node.declare_parameter('sens_ts', False)
-        self._node.declare_parameter('use_ros_time', False)
+        self.__node.declare_parameter('robot_host', "192.168.1.100")
+        self.__node.declare_parameter('robot_port', 8439)
+        self.__node.declare_parameter('robot_frame_id', "base_link")
+        self.__node.declare_parameter('state_buffer_size', 200)
+        self.__node.declare_parameter('sens_ts', False)
+        self.__node.declare_parameter('use_ros_time', False)
         self._robot_param = {
-            "host": self._node.get_parameter('robot_host').value,
-            "port": self._node.get_parameter('robot_port').value,
-            "frame_id": self._node.get_parameter('robot_frame_id').value,
-            "state_buffer_size": self._node.get_parameter('state_buffer_size').value,
-            "sens_ts": self._node.get_parameter('sens_ts').value,
+            "host": self.__node.get_parameter('robot_host').value,
+            "port": self.__node.get_parameter('robot_port').value,
+            "frame_id": self.__node.get_parameter('robot_frame_id').value,
+            "state_buffer_size": self.__node.get_parameter('state_buffer_size').value,
+            "sens_ts": self.__node.get_parameter('sens_ts').value,
         }
 
         ### time source — PTP (ns_now) or ROS clock
-        self._use_ros_time = self._node.get_parameter('use_ros_time').value
+        self._use_ros_time = self.__node.get_parameter('use_ros_time').value
 
         ### publisher — manip_state
-        self.__manip_state_pub = self._node.create_publisher(
+        self.__manip_state_pub = self.__node.create_publisher(
             HexRosRoboManipStateStamped,
             'manip_state',
             10,
         )
         ### publisher — joint_states (for robot_state_publisher / rviz)
-        self.__joint_state_pub = self._node.create_publisher(
+        self.__joint_state_pub = self.__node.create_publisher(
             JointState,
             'joint_states',
             10,
         )
         ### publisher — /clock (for sim_time compatibility)
-        self.__clock_pub = self._node.create_publisher(
+        self.__clock_pub = self.__node.create_publisher(
             Clock,
             '/clock',
             10,
         )
         ### publisher — joy_state (Hello grip joy)
-        self.__joy_state_pub = self._node.create_publisher(
+        self.__joy_state_pub = self.__node.create_publisher(
             HexRosTeleopHandleStateStamped,
             'joy_state',
             10,
@@ -90,7 +99,7 @@ class DataInterface(DataInterfaceBase, HelloInterfaceBase):
         ### NOTE: No manip_ctrl subscriber — Hello Y6 is read-only.
 
         ### subscriber — color_cmd (RGB LED control, std_msgs/ColorRGBA)
-        self.__color_cmd_sub = self._node.create_subscription(
+        self.__color_cmd_sub = self.__node.create_subscription(
             ColorRGBA,
             'color_cmd',
             self.__color_cmd_callback,
@@ -102,11 +111,55 @@ class DataInterface(DataInterfaceBase, HelloInterfaceBase):
         self.__rate.sleep()
 
     ####################
+    ### ros infrastructure
+    ####################
+    def ok(self) -> bool:
+        return rclpy.ok()
+
+    def shutdown(self):
+        if self._shutting_down:
+            return
+        self._shutting_down = True
+        try:
+            self.__node.destroy_node()
+        except Exception:
+            pass
+        try:
+            rclpy.shutdown()
+        except Exception:
+            pass
+        self.__spin_thread.join()
+
+    def __spin(self):
+        try:
+            rclpy.spin(self.__node)
+        except rclpy.executors.ExternalShutdownException:
+            pass
+
+    ####################
+    ### logging
+    ####################
+    def logd(self, msg, *args, **kwargs):
+        self._logger.debug(msg, *args, **kwargs)
+
+    def logi(self, msg, *args, **kwargs):
+        self._logger.info(msg, *args, **kwargs)
+
+    def logw(self, msg, *args, **kwargs):
+        self._logger.warning(msg, *args, **kwargs)
+
+    def loge(self, msg, *args, **kwargs):
+        self._logger.error(msg, *args, **kwargs)
+
+    def logf(self, msg, *args, **kwargs):
+        self._logger.fatal(msg, *args, **kwargs)
+
+    ####################
     ### time source
     ####################
     def now_ns(self) -> int:
         if self._use_ros_time:
-            return self._node.get_clock().now().nanoseconds
+            return self.__node.get_clock().now().nanoseconds
         return ns_now()
 
     ####################

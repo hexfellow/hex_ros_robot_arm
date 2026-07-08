@@ -21,7 +21,7 @@ def get_files(tar: str, src: str):
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.0.1a0',
     packages=find_packages(),
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -31,6 +31,8 @@ setup(
         *get_files('share/' + package_name, 'launch/ros1'),
         *get_files('share/' + package_name + '/config/ros2', 'config/ros2'),
         *get_files('share/' + package_name + '/config/ros1', 'config/ros1'),
+        # *get_files('share/' + package_name, "launch/ros2"),
+        # *get_files('share/' + package_name + '/config/ros2', "config/ros2"),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -40,6 +42,9 @@ setup(
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
+            # 'robot_archer_y6 = hex_ros_robot_arm.robot_archer_y6:main',
+            # 'robot_firefly_y6 = hex_ros_robot_arm.robot_firefly_y6:main',
+            # 'robot_hello_y6 = hex_ros_robot_arm.robot_hello_y6:main',
             'hex_ros_robot_archer_y6 = hex_ros_robot_arm.robot_archer_y6:main',
             'hex_ros_robot_firefly_y6 = hex_ros_robot_arm.robot_firefly_y6:main',
             'hex_ros_robot_hello_y6 = hex_ros_robot_arm.robot_hello_y6:main',

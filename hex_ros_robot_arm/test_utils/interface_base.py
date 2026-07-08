@@ -8,9 +8,7 @@
 
 from collections import deque
 from typing import Any, Optional
-from abc import abstractmethod
-
-from hex_ros_common.utility import InterfaceBase
+from abc import ABC, abstractmethod
 
 from hex_util_msg.dataclass.dataclass_robo import (
     HexDcRoboManipCtrl,
@@ -18,16 +16,58 @@ from hex_util_msg.dataclass.dataclass_robo import (
 )
 
 
-class TestInterfaceBase(InterfaceBase):
+class TestInterfaceBase(ABC):
 
     def __init__(self, name: str = "unknown"):
-        super().__init__(name)
+        self._name = name
 
         ### ros parameters
         self._rate_param = {}
 
         ### rx msg queues
         self._manip_state_deque = deque(maxlen=100)
+
+    ####################
+    ### ros infrastructure
+    ####################
+    @abstractmethod
+    def ok(self) -> bool:
+        raise NotImplementedError("TestInterfaceBase.ok")
+
+    @abstractmethod
+    def shutdown(self):
+        raise NotImplementedError("TestInterfaceBase.shutdown")
+
+    @abstractmethod
+    def sleep(self):
+        raise NotImplementedError("TestInterfaceBase.sleep")
+
+    @abstractmethod
+    def now_ns(self) -> int:
+        raise NotImplementedError("TestInterfaceBase.now_ns")
+
+    ####################
+    ### logging
+    ####################
+    @abstractmethod
+    def logd(self, msg, *args, **kwargs):
+        raise NotImplementedError("TestInterfaceBase.logd")
+
+    @abstractmethod
+    def logi(self, msg, *args, **kwargs):
+        raise NotImplementedError("TestInterfaceBase.logi")
+
+    @abstractmethod
+    def logw(self, msg, *args, **kwargs):
+        raise NotImplementedError("TestInterfaceBase.logw")
+
+    @abstractmethod
+    def loge(self, msg, *args, **kwargs):
+        raise NotImplementedError("TestInterfaceBase.loge")
+
+    @abstractmethod
+    def logf(self, msg, *args, **kwargs):
+        raise NotImplementedError("TestInterfaceBase.logf")
 
     ####################
     ### parameters

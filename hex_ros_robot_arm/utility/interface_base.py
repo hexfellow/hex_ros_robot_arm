@@ -8,25 +8,20 @@
 
 from collections import deque
 from typing import Any, Optional
-from abc import abstractmethod
-
-from hex_ros_common.utility import InterfaceBase
+from abc import ABC, abstractmethod
 
 from hex_util_msg.dataclass.dataclass_robo import (
     HexDcRoboManipCtrlStamped,
     HexDcRoboManipStateStamped,
 )
-from hex_util_msg.dataclass.dataclass_teleop import (
-    HexDcTeleopHandleStateStamped,
-)
 
 JOINT_STATE_NAME = [f"joint_{i}" for i in range(1, 7)] + ["grip_joint_1"]
 
 
-class ArmInterfaceBase(InterfaceBase):
+class ArmInterfaceBase(ABC):
 
     def __init__(self, name: str = "unknown"):
-        super().__init__(name)
+        self._name = name
 
         ### ros parameters
         self._rate_param = {}
@@ -34,7 +29,48 @@ class ArmInterfaceBase(InterfaceBase):
 
         ### rx msg queues
         self._manip_ctrl_deque = deque(maxlen=100)
-        self._color_cmd_deque = deque(maxlen=10)
+
+    ####################
+    ### ros infrastructure
+    ####################
+    @abstractmethod
+    def ok(self) -> bool:
+        raise NotImplementedError("ArmInterfaceBase.ok")
+
+    @abstractmethod
+    def shutdown(self):
+        raise NotImplementedError("ArmInterfaceBase.shutdown")
+
+    @abstractmethod
+    def sleep(self):
+        raise NotImplementedError("ArmInterfaceBase.sleep")
+
+    @abstractmethod
+    def now_ns(self) -> int:
+        raise NotImplementedError("ArmInterfaceBase.now_ns")
+
+    ####################
+    ### logging
+    ####################
+    @abstractmethod
+    def logd(self, msg, *args, **kwargs):
+        raise NotImplementedError("ArmInterfaceBase.logd")
+
+    @abstractmethod
+    def logi(self, msg, *args, **kwargs):
+        raise NotImplementedError("ArmInterfaceBase.logi")
+
+    @abstractmethod
+    def logw(self, msg, *args, **kwargs):
+        raise NotImplementedError("ArmInterfaceBase.logw")
+
+    @abstractmethod
+    def loge(self, msg, *args, **kwargs):
+        raise NotImplementedError("ArmInterfaceBase.loge")
+
+    @abstractmethod
+    def logf(self, msg, *args, **kwargs):
+        raise NotImplementedError("ArmInterfaceBase.logf")
 
     ####################
     ### parameters
@@ -60,10 +96,6 @@ class ArmInterfaceBase(InterfaceBase):
     def pub_clock(self, stamp_ns: int):
         raise NotImplementedError("ArmInterfaceBase.pub_clock")
 
-    @abstractmethod
-    def pub_joy_state(self, out: HexDcTeleopHandleStateStamped):
-        raise NotImplementedError("ArmInterfaceBase.pub_joy_state")
-
     ####################
     ### subscribers
     ####################
@@ -88,7 +120,3 @@ class ArmInterfaceBase(InterfaceBase):
         latest: bool = False,
     ) -> Optional[HexDcRoboManipCtrlStamped]:
         return self.deque_helper(self._manip_ctrl_deque, latest)
-
-    # color command (RGB LED — Hello Y6)
-    def get_color_cmd(self, latest: bool = False) -> Optional[dict[str, list[int]]]:
-        return self.deque_helper(self._color_cmd_deque, latest)

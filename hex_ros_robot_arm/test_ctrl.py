@@ -218,6 +218,7 @@ class TestCtrl:
                 cycle_idx = step // self.__cycle_decim
 
                 # 2. build the manipulator control command
+                
                 # manip_ctrl = none_case(cycle_idx)
                 # manip_ctrl = mit_case(cycle_idx)
                 manip_ctrl = jnt_case(cycle_idx)
