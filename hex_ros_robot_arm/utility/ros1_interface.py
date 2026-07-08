@@ -12,8 +12,6 @@ import rospy
 
 from hex_util_runtime import ns_now
 
-from hex_ros_common.utility import DataInterfaceBase
-
 from sensor_msgs.msg import JointState
 from rosgraph_msgs.msg import Clock
 from std_msgs.msg import ColorRGBA
@@ -46,9 +44,10 @@ from .interface_base import ArmInterfaceBase
 from .interface_base import JOINT_STATE_NAME
 
 
-class DataInterface(DataInterfaceBase, ArmInterfaceBase):
+class DataInterface(ArmInterfaceBase):
 
     def __init__(self, name: str = "unknown"):
+        rospy.init_node(name, anonymous=True)
         super().__init__(name)
 
         ### rate parameters
@@ -98,6 +97,33 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
 
     def sleep(self):
         self.__rate.sleep()
+
+    ####################
+    ### ros infrastructure
+    ####################
+    def ok(self) -> bool:
+        return not rospy.is_shutdown()
+
+    def shutdown(self):
+        pass
+
+    ####################
+    ### logging
+    ####################
+    def logd(self, msg, *args, **kwargs):
+        rospy.logdebug(msg, *args, **kwargs)
+
+    def logi(self, msg, *args, **kwargs):
+        rospy.loginfo(msg, *args, **kwargs)
+
+    def logw(self, msg, *args, **kwargs):
+        rospy.logwarn(msg, *args, **kwargs)
+
+    def loge(self, msg, *args, **kwargs):
+        rospy.logerr(msg, *args, **kwargs)
+
+    def logf(self, msg, *args, **kwargs):
+        rospy.logfatal(msg, *args, **kwargs)
 
     ####################
     ### time source

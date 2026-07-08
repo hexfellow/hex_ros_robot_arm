@@ -7,10 +7,12 @@
 ################################################################
 
 import numpy as np
+import threading
 
 from hex_util_runtime import ns_now
 
-from hex_ros_common.utility import DataInterfaceBase
+import rclpy
+import rclpy.node
 
 from builtin_interfaces.msg import Time
 from sensor_msgs.msg import JointState
@@ -32,9 +34,16 @@ from .interface_base import HelloInterfaceBase
 from .interface_base import JOINT_STATE_NAME
 
 
-class DataInterface(DataInterfaceBase, HelloInterfaceBase):
+class DataInterface(HelloInterfaceBase):
 
     def __init__(self, name: str = "unknown"):
+        rclpy.init()
+        self._node = rclpy.node.Node(name)
+        self._logger = self._node.get_logger()
+        self._shutting_down = False
+        self.__spin_thread = threading.Thread(target=self.__spin)
+        self.__spin_thread.start()
+
         super().__init__(name)
 
         ### rate parameters
@@ -100,6 +109,50 @@ class DataInterface(DataInterfaceBase, HelloInterfaceBase):
 
     def sleep(self):
         self.__rate.sleep()
+
+    ####################
+    ### ros infrastructure
+    ####################
+    def ok(self) -> bool:
+        return rclpy.ok()
+
+    def shutdown(self):
+        if self._shutting_down:
+            return
+        self._shutting_down = True
+        try:
+            self._node.destroy_node()
+        except Exception:
+            pass
+        try:
+            rclpy.shutdown()
+        except Exception:
+            pass
+        self.__spin_thread.join()
+
+    def __spin(self):
+        try:
+            rclpy.spin(self._node)
+        except rclpy.executors.ExternalShutdownException:
+            pass
+
+    ####################
+    ### logging
+    ####################
+    def logd(self, msg, *args, **kwargs):
+        self._logger.debug(msg, *args, **kwargs)
+
+    def logi(self, msg, *args, **kwargs):
+        self._logger.info(msg, *args, **kwargs)
+
+    def logw(self, msg, *args, **kwargs):
+        self._logger.warning(msg, *args, **kwargs)
+
+    def loge(self, msg, *args, **kwargs):
+        self._logger.error(msg, *args, **kwargs)
+
+    def logf(self, msg, *args, **kwargs):
+        self._logger.fatal(msg, *args, **kwargs)
 
     ####################
     ### time source
