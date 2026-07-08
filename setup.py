@@ -21,7 +21,7 @@ def get_files(tar: str, src: str):
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.0.1a0',
     packages=find_packages(),
     data_files=[
         ('share/ament_index/resource_index/packages',
