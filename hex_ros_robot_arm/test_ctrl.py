@@ -1,4 +1,4 @@
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 ################################################################
 # Copyright 2024 Dong Zhaorui. All rights reserved.

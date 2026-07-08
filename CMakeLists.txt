@@ -29,9 +29,10 @@ foreach(SCRIPT ${SCRIPT_FILES})
     endif()
 endforeach()
 
-catkin_install_python(PROGRAMS
-  hex_ros_robot_arm/robot_archer_y6.py
-  hex_ros_robot_arm/robot_firefly_y6.py
-  hex_ros_robot_arm/robot_hello_y6.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+# catkin_install_python(PROGRAMS
+#   hex_ros_robot_arm/robot_archer_y6.py
+#   hex_ros_robot_arm/robot_firefly_y6.py
+#   hex_ros_robot_arm/robot_hello_y6.py
+#   hex_ros_robot_arm/test_ctrl.py
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
