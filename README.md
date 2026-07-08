@@ -160,7 +160,9 @@ Incorrect kp/kd values may cause violent motion or equipment damage.
 pip3 install 'hex-util-msg>=0.1.0a0'
 pip3 install 'hex-util-ros>=0.0.1a0'
 pip3 install 'hex-util-runtime>=0.0.0,<0.1.0'
-pip3 install 'hex-driver-robot>=0.1.0'
+pip3 install 'hex-driver-robot>=0.0.1'
+pip3 install 'hex_util_msg==0.1.0a4'
+
 ```
 
 ### ROS Packages

@@ -6,7 +6,24 @@
 <!--#######################################-->
 
 <launch>
-    <node name="hex_ros_robot_archer_y6" pkg="hex_ros_robot_arm" type="hex_ros_robot_archer_y6.py" output="screen" >
+    <!-- overridable arguments -->
+    <arg name="test" default="false"/>
+    <arg name="robot_host" default="192.168.1.100"/>
+    <arg name="robot_port" default="8439"/>
+    <arg name="robot_grip_type" default="empty"/>
+
+    <!-- robot node -->
+    <node name="hex_ros_robot_archer_y6" pkg="hex_ros_robot_arm" type="robot_archer_y6.py" output="screen" >
         <rosparam file="$(find hex_ros_robot_arm)/config/ros1/archer_params.yaml"/>
+        <param name="robot_host" value="$(arg robot_host)"/>
+        <param name="robot_port" value="$(arg robot_port)"/>
+        <param name="robot_grip_type" value="$(arg robot_grip_type)"/>
     </node>
+
+    <!-- test group -->
+    <group if="$(arg test)">
+        <node name="test_ctrl" pkg="hex_ros_robot_arm" type="test_ctrl.py" output="screen">
+            <param name="use_sim_time" value="true"/>
+        </node>
+    </group>
 </launch>

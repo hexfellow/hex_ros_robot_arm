@@ -7,7 +7,7 @@
 ################################################################
 
 from collections import deque
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 from abc import abstractmethod
 
 from hex_ros_common.utility import InterfaceBase
@@ -86,5 +86,5 @@ class HelloInterfaceBase(InterfaceBase):
                 return None
 
     # color command (RGB LED — Hello Y6)
-    def get_color_cmd(self, latest: bool = False) -> Optional[dict[str, list[int]]]:
+    def get_color_cmd(self, latest: bool = False) -> Optional[Dict[str, List[int]]]:
         return self.deque_helper(self._color_cmd_deque, latest)

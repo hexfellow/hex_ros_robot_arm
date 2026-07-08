@@ -14,7 +14,6 @@ from hex_util_runtime import ns_now
 
 from hex_ros_common.utility import DataInterfaceBase
 
-from builtin_interfaces.msg import Time
 from sensor_msgs.msg import JointState
 from rosgraph_msgs.msg import Clock
 from std_msgs.msg import ColorRGBA
@@ -113,9 +112,9 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
     ####################
     def pub_manip_state(self, out: HexDcRoboManipStateStamped):
         msg = HexRosRoboManipStateStamped()
-        msg.header.stamp = Time(
-            sec=int(out.header.stamp.secs),
-            nanosec=int(out.header.stamp.nsecs),
+        msg.header.stamp = rospy.Time(
+            int(out.header.stamp.secs),
+            int(out.header.stamp.nsecs),
         )
         msg.header.frame_id = out.header.frame_id
 
@@ -146,9 +145,9 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
 
     def pub_joint_state(self, out: HexDcRoboManipStateStamped):
         msg = JointState()
-        msg.header.stamp = Time(
-            sec=int(out.header.stamp.secs),
-            nanosec=int(out.header.stamp.nsecs),
+        msg.header.stamp = rospy.Time(
+            int(out.header.stamp.secs),
+            int(out.header.stamp.nsecs),
         )
         msg.header.frame_id = out.header.frame_id
         msg.name = JOINT_STATE_NAME
@@ -174,9 +173,9 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
 
     def pub_clock(self, stamp_ns: int):
         msg = Clock()
-        msg.clock = Time(
-            sec=int(stamp_ns // 1_000_000_000),
-            nanosec=int(stamp_ns % 1_000_000_000),
+        msg.clock = rospy.Time(
+            int(stamp_ns // 1_000_000_000),
+            int(stamp_ns % 1_000_000_000),
         )
         self.__clock_pub.publish(msg)
 
@@ -188,8 +187,8 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
             msg: HexRosRoboManipCtrlStamped) -> HexDcRoboManipCtrlStamped:
         header = HexDcBaseHeader(
             stamp=HexDcBaseTime(
-                secs=int(msg.header.stamp.sec),
-                nsecs=int(msg.header.stamp.nanosec),
+                secs=int(msg.header.stamp.secs),
+                nsecs=int(msg.header.stamp.nsecs),
             ),
             frame_id=msg.header.frame_id,
         )
