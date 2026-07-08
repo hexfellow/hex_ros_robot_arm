@@ -48,8 +48,8 @@ class DataInterface(TestInterfaceBase):
 
     def __init__(self, name: str = "unknown"):
         rclpy.init()
-        self._node = rclpy.node.Node(name)
-        self._logger = self._node.get_logger()
+        self.__node = rclpy.node.Node(name)
+        self._logger = self.__node.get_logger()
         self._shutting_down = False
         self.__spin_thread = threading.Thread(target=self.__spin)
         self.__spin_thread.start()
@@ -57,24 +57,24 @@ class DataInterface(TestInterfaceBase):
         super().__init__(name)
 
         ### parameters
-        self._node.declare_parameter('rate_ros', 1000.0)
-        self._rate_param["ros"] = self._node.get_parameter('rate_ros').value
-        self.__rate = self._node.create_rate(self._rate_param["ros"])
+        self.__node.declare_parameter('rate_ros', 1000.0)
+        self._rate_param["ros"] = self.__node.get_parameter('rate_ros').value
+        self.__rate = self.__node.create_rate(self._rate_param["ros"])
 
-        self._node.declare_parameter('rate_ctrl', 500.0)
+        self.__node.declare_parameter('rate_ctrl', 500.0)
         self._rate_param.update({
-            "ctrl": self._node.get_parameter('rate_ctrl').value,
+            "ctrl": self.__node.get_parameter('rate_ctrl').value,
         })
 
         ### publisher
-        self.__manip_ctrl_pub = self._node.create_publisher(
+        self.__manip_ctrl_pub = self.__node.create_publisher(
             HexRosRoboManipCtrlStamped,
             'manip_ctrl',
             10,
         )
 
         ### subscriber
-        self.__manip_state_sub = self._node.create_subscription(
+        self.__manip_state_sub = self.__node.create_subscription(
             HexRosRoboManipStateStamped,
             'manip_state',
             self.__manip_state_callback,
@@ -96,7 +96,7 @@ class DataInterface(TestInterfaceBase):
             return
         self._shutting_down = True
         try:
-            self._node.destroy_node()
+            self.__node.destroy_node()
         except Exception:
             pass
         try:
@@ -107,12 +107,12 @@ class DataInterface(TestInterfaceBase):
 
     def __spin(self):
         try:
-            rclpy.spin(self._node)
+            rclpy.spin(self.__node)
         except rclpy.executors.ExternalShutdownException:
             pass
 
     def now_ns(self) -> int:
-        return self._node.get_clock().now().nanoseconds
+        return self.__node.get_clock().now().nanoseconds
 
     ####################
     ### logging
@@ -137,7 +137,7 @@ class DataInterface(TestInterfaceBase):
     ####################
     def pub_manip_ctrl(self, out: HexDcRoboManipCtrl):
         msg = HexRosRoboManipCtrlStamped()
-        msg.header.stamp = self._node.get_clock().now().to_msg()
+        msg.header.stamp = self.__node.get_clock().now().to_msg()
         msg.manip_ctrl = HexRosRoboManipCtrl(
             arm_ctrl=self.__arm_ctrl_to_msg(out.arm_ctrl),
             grip_ctrl=self.__grip_ctrl_to_msg(out.grip_ctrl),
