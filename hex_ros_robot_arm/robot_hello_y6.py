@@ -118,17 +118,17 @@ class RobotHelloY6:
             if color_cmd is not None:
                 self.__robot.set_rgb_cmd(color_cmd)
 
-            # 2. read robot arm state and grip joy
-            arm_state = self.__robot.get_arm_state()
-            joy_state = self.__build_joy_state(self.__robot.get_grip_joy())
-
-            # 3. publish /clock (not decimated)
+            # 2. publish /clock
             self.__data_interface.pub_clock(self.__data_interface.now_ns())
 
-            # 4. publish robot state at the requested rate
+            # 3. publish robot state at the requested rate
             state_count += 1
             if state_count >= self.__state_decim:
                 state_count = 0
+                
+                arm_state = self.__robot.get_arm_state()
+                joy_state = self.__build_joy_state(self.__robot.get_grip_joy())
+                
                 manip_state = self.__build_manip_state(arm_state)
                 if manip_state is not None:
                     self.__data_interface.pub_manip_state(manip_state)
