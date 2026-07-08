@@ -28,7 +28,6 @@ Each node connects to the real controller over WebSocket, subscribes to control 
 
 ---
 
-git clone https://github.com/hexfellow/hex_ros_common.git
 ## 2. Package Structure
 
 ```
@@ -97,9 +96,11 @@ hex_ros_robot_arm/
 | pub | `/clock` | `rosgraph_msgs/(msg/)Clock` | Clock for sim_time compatibility |
 | sub | `color_cmd` | `std_msgs/(msg/)ColorRGBA` | RGB LED color command (float 0-1 → int 0-255) |
 
-### MIT Mode Warning
+> [Message Type Description](https://github.com/hexfellow/hex_ros_msgs#public-apis)
 
-Incorrect kp/kd values may cause violent motion or equipment damage.
+### MIT Mode Warning
+- Do not use MIT mode unless you know what it is.
+- Improper use may cause the robotic arm to move violently or even damage the equipment.
 
 > Operate in a safe area with emergency stop accessible.
 
@@ -109,9 +110,9 @@ Incorrect kp/kd values may cause violent motion or equipment damage.
 
 ### Archer Y6 / Firefly Y6
 
-**Arm control modes:** MIT (impedance), JNT (position), EE (end-effector pose), NONE
+**Arm control modes:** MIT , JNT (position), EE (end-effector pose), NONE
 
-**Gripper control modes:** MIT (impedance), JNT (position), TAU (force/torque), NONE
+**Gripper control modes:** MIT , JNT (position), TAU (force/torque), NONE
 
 ### Hello Y6
 

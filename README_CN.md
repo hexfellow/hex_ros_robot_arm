@@ -26,7 +26,6 @@
 
 ---
 
-git clone https://github.com/hexfellow/hex_ros_common.git
 ## 2. 包架构
 
 ```
@@ -97,11 +96,15 @@ hex_ros_robot_arm/
 | 发布 | `/clock` | `rosgraph_msgs/(msg/)Clock` | 时钟消息，用于 sim_time 兼容模式 |
 | 订阅 | `color_cmd` | `std_msgs/(msg/)ColorRGBA` | RGB LED 颜色指令（float 0-1 → int 0-255） |
 
-### MIT 模式使用警告
+> [消息类型描述](https://github.com/hexfellow/hex_ros_msgs#public-apis)
 
-kp/kd 参数设置不当可能导致机械臂剧烈运动甚至损坏设备。
+### MIT 模式使用警告
+- 除非你知道什么是MIT模式，否则不要使用该模式
+- 使用不当可能导致机械臂剧烈运动甚至损坏设备
 
 > 确保在安全区域内运行，并随时准备急停
+
+
 
 ---
 
@@ -109,9 +112,9 @@ kp/kd 参数设置不当可能导致机械臂剧烈运动甚至损坏设备。
 
 ### Archer Y6 / Firefly Y6
 
-**臂控制模式：** MIT（阻抗）、JNT（位置）、EE（末端位姿）、NONE
+**臂控制模式：** MIT 、JNT（位置）、EE（末端位姿）、NONE
 
-**夹爪控制模式：** MIT（阻抗）、JNT（位置）、TAU（力矩）、NONE
+**夹爪控制模式：** MIT 、JNT（位置）、TAU（力矩）、NONE
 
 ### Hello Y6
 
