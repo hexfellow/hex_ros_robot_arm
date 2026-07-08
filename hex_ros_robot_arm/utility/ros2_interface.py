@@ -15,13 +15,11 @@ from hex_ros_common.utility import DataInterfaceBase
 from builtin_interfaces.msg import Time
 from sensor_msgs.msg import JointState
 from rosgraph_msgs.msg import Clock
-from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import Pose
 from hex_ros_msgs.msg import (
     HexRosJnt,
     HexRosRoboManipStateStamped,
     HexRosRoboManipCtrlStamped,
-    HexRosTeleopHandleStateStamped,
 )
 
 from hex_util_msg.dataclass.dataclass_base import (
@@ -40,9 +38,6 @@ from hex_util_msg.dataclass.dataclass_robo import (
     HexDcRoboManipCtrl,
     HexDcRoboManipCtrlStamped,
     HexDcRoboManipStateStamped,
-)
-from hex_util_msg.dataclass.dataclass_teleop import (
-    HexDcTeleopHandleStateStamped,
 )
 
 from .interface_base import ArmInterfaceBase
@@ -99,12 +94,6 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
             '/clock',
             10,
         )
-        ### publisher — joy_state (Hello grip joy)
-        self.__joy_state_pub = self._node.create_publisher(
-            HexRosTeleopHandleStateStamped,
-            'joy_state',
-            10,
-        )
 
         ### subscriber — manip_ctrl
         self.__manip_ctrl_sub = self._node.create_subscription(
@@ -114,15 +103,6 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
             10,
         )
         self.__manip_ctrl_sub
-
-        ### subscriber — color_cmd (RGB LED control, std_msgs/ColorRGBA)
-        self.__color_cmd_sub = self._node.create_subscription(
-            ColorRGBA,
-            'color_cmd',
-            self.__color_cmd_callback,
-            10,
-        )
-        self.__color_cmd_sub
 
     def sleep(self):
         self.__rate.sleep()
@@ -206,36 +186,6 @@ class DataInterface(DataInterfaceBase, ArmInterfaceBase):
             nanosec=int(stamp_ns % 1_000_000_000),
         )
         self.__clock_pub.publish(msg)
-
-    def pub_joy_state(self, out: HexDcTeleopHandleStateStamped):
-        msg = HexRosTeleopHandleStateStamped()
-        msg.header.stamp = Time(
-            sec=int(out.header.stamp.secs),
-            nanosec=int(out.header.stamp.nsecs),
-        )
-        msg.header.frame_id = out.header.frame_id
-        msg.handle_state.axis_x = out.handle_state.axis_x
-        msg.handle_state.axis_y = out.handle_state.axis_y
-        msg.handle_state.trigger = out.handle_state.trigger
-        msg.handle_state.btn_w = out.handle_state.btn_w
-        msg.handle_state.btn_x = out.handle_state.btn_x
-        msg.handle_state.btn_y = out.handle_state.btn_y
-        msg.handle_state.btn_z = out.handle_state.btn_z
-        self.__joy_state_pub.publish(msg)
-
-    ####################
-    ### subscribers
-    ####################
-    def __color_cmd_callback(self, msg: ColorRGBA):
-        """Convert ColorRGBA (float 0-1) to int 0-255 arrays and push to deque."""
-        r = int(msg.r * 255.0)
-        g = int(msg.g * 255.0)
-        b = int(msg.b * 255.0)
-        self._color_cmd_deque.append({
-            "r": [r] * 6,
-            "g": [g] * 6,
-            "b": [b] * 6,
-        })
 
     def __manip_ctrl_callback(self, msg: HexRosRoboManipCtrlStamped):
         self._manip_ctrl_deque.append(self.__manip_ctrl_msg_to_dc(msg))
