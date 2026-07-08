@@ -1,0 +1,12 @@
+<!--#######################################-->
+<!-- Copyright (c) 2024  Dong Zhaorui.     -->
+<!-- All rights reserved.                  -->
+<!-- Author: Dong Zhaorui 847235539@qq.com -->
+<!-- Date  : 2024-09-17                    -->
+<!--#######################################-->
+
+<launch>
+    <node name="hex_ros_robot_archer_y6" pkg="hex_ros_robot_arm" type="hex_ros_robot_archer_y6.py" output="screen" >
+        <rosparam file="$(find hex_ros_robot_arm)/config/ros1/archer_params.yaml"/>
+    </node>
+</launch>
