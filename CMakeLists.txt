@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(hex_ros_robot_arm)
 
+
+# ============================
+# ROS1 (catkin)
+# ============================
+
 find_package(catkin REQUIRED)
 
 catkin_package()
