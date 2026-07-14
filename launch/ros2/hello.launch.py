@@ -12,11 +12,17 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
+from launch.substitutions import LaunchConfiguration
+from launch_ros.substitutions import FindPackageShare
+
 
 
 def generate_launch_description():
     package_name = "hex_ros_robot_arm"
 
+    robot_param_path = FindPackageShare(package_name).find(
+        package_name) + '/config/ros2/hello_params.yaml'
+    
     ### robot node
     robot_node = Node(
         package=package_name,
@@ -25,8 +31,11 @@ def generate_launch_description():
         output="screen",
         emulate_tty=True,
         parameters=[
-            os.path.join(get_package_share_directory(package_name),
-                         "config/ros2/hello_params.yaml"),
+            robot_param_path,
+            {
+                'robot_host': LaunchConfiguration('robot_host'),
+                'robot_port': LaunchConfiguration('robot_port'),
+            },
         ],
     )
 
